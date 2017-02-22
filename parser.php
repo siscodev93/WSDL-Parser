@@ -1,6 +1,14 @@
 <?php 
+header("Content-Type: text/plain");
+//Set URL to wsdl service, i forget once in awhile to update this so it will turn evil if you dont
+$url = '';
 
-$url = 'http://www.webservicex.com/country.asmx?wsdl';
+
+if(strlen($url) < 5)
+{
+	print("I cannot let you do that human...");
+    return -1;
+}
 $client = new SoapClient($url);
 
 
@@ -8,6 +16,7 @@ $functions = array();
 $types = array();
 $structs = array();
 $params = array();
+
 //Store the functions from the wsdl
 foreach($client->__getFunctions() as $function)
 {
@@ -41,7 +50,6 @@ foreach($client->__getTypes() as $type)
         //We simpily want to add the correct class parameters to it
 
         if(in_array($struct,array_keys($functions))){
-            //If params 
             $pr = (isset($params[$struct])) ? $params[$struct] : "";
             $functions[$struct]['params'] = $pr;
             //unset($params[$struct]);
@@ -63,22 +71,23 @@ echo "<br><br>Params: <br>";
 echo "<br><br>Functions: <br>";
 var_dump($functions);
 */
-var_dump($functions);
 
 foreach($functions as $key => $fun)
 {
-    if(empty($fun['params'])) continue;
+    if(empty($fun['params'])) {
+        continue;
+    }
     foreach($fun['params'] as $k => $p)
     {
         if(in_array($p,array_keys($params)))
         {
             $functions[$key]['params'][$k] = array_keys($params[$p]);
             //unset($params[$p]);
-            
         }
     }
 }
 
+//Below here is just outputting the code
 
 echo "<?php\n";
 echo "class test \n{\n\n";
@@ -92,6 +101,18 @@ echo "    protected \$client = null;
 foreach($params as $k => $v)
 {
     echo "\tprivate \${$k} = array(\n\t\t'".implode("' => null,\n\t\t'", array_keys($v))."' => null\n\t);\n\n";
+}
+
+foreach($params as $k => $v)
+{
+	echo "\tpublic function set{$k}( \$".implode(", $", array_keys($v)) . " ){\n\n";
+	foreach(array_keys($v) as $t)
+	{
+		echo "\t\t\$this->{$k}['{$t}'] = \${$t};\n";
+	}
+	echo "\t\treturn \$this->{$k};\n"; 	
+		
+	echo "\t}\n\n";
 }
 
 foreach($functions as $k => $v)
